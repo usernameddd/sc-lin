@@ -1,0 +1,80 @@
+server:
+  port: 8000
+spring:
+  application:
+    # 只能使用中划线，不能使用下划线
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          # 开启，service-id只能小写；若不开启，只能识别大写
+#          lower-case-service-id: true
+      routes:
+        - id: service
+          uri: lb://api-service
+          predicates:
+          - Path=/java/**
+          filters:
+          - StripPrefix=1
+          # 将用户请求的header中的userId先去除掉，避免用户构造userId（防止用户访问以其他用户的名义访问资源）
+          - RemoveRequestHeader=userId
+#          - MapRequestHeader=userId, x  （将http请求中的header中的userId变为新的x）
+          - JwtCheck
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/sc-lin?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: admin
+    # 整合了druid
+#    type: com.alibaba.druid.pool.DruidDataSource
+#    druid:
+#      stat-view-servlet:
+#        login-password: admin
+#        login-username: admin
+#      filter:
+#        stat:
+#          log-slow-sql: true
+#          slow-sql-millis: 2000
+#  mvc:
+#    servlet:
+#      load-on-startup: 1
+eureka:
+  client:
+    service-url:
+      defaultZone: http://lin:www.daizening.com@127.0.0.1:8888/eureka
+  instance:
+    ip-address: 127.0.0.1
+    prefer-ip-address: true
+logging:
+  level:
+    org.springframework.cloud.gateway: debug
+
+
+# jwt生成token相关
+daizening:
+  security:
+    token:
+      expiration-time: 30 # 分钟 1440
+      refresh-exp-time: 60 # 分钟 2880
+      issuer: https://daizening.com
+      signing-key: daizening
+
+# mybatis 配置
+mybatis:
+  mapper-locations: classpath*:mappers/*.xml
+  type-aliases-package: com.daizening.model.base
+  configuration:
+    map-underscore-to-camel-case: true
+    use-column-label: true
+
+
+# 分页插件的配置
+pagehelper:
+  helper-dialect: mysql
+  # reasonable为true时，会针对不合理的页码进行自动处理
+  reasonable: false
+  support-methods-arguments: true
+  params: count=countSql
